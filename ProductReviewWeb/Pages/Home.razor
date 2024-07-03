@@ -1,0 +1,226 @@
+﻿@page "/"
+@using ProductReviewWeb.Services
+@using ProductReviewWeb.Models
+@using System.Net.Http.Headers
+@inject NavigationManager Navigation
+@inject IHttpClientFactory HttpClientFactory
+@inject ISecureStorage SecureStorageService
+
+<div class="container mt-4">
+    @if (IsAdmin)
+    {
+        <p>hello</p>
+        <button class="btn btn-primary mb-3" @onclick="NavigateToAdminPage">Add Product</button>
+    }
+
+    <h1 class="mb-4 text-center">Products and Reviews</h1>
+
+    <div class="row">
+        @foreach (var product in Products)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    @if (product.Product == "Washing Machine Heart")
+                    {
+                        <img src="img/mitski (1).jpg" class="card-img-top fixed-size-image" alt="Mitski Image">
+                    }
+                    else if (product.Product == "Phone")
+                    {
+                        <img src="img/Phone.jpg" class="card-img-top fixed-size-image" alt="Phone Image">
+                    }
+                    else if (product.Product == "Console")
+                    {
+                        <img src="img/console.png" class="card-img-top fixed-size-image" alt="Console Image">
+                    }
+                    else if (product.Product == "Washing Machine")
+                    {
+                        <img src="img/washinmachine.jpg" class="card-img-top fixed-size-image" alt="Washing Machine Image">
+                    }
+                    else if (product.Product == "Laptop")
+                    {
+                        <img src="img/laptop.jpg" class="card-img-top fixed-size-image" alt="Laptop Image">
+                    }
+                    else if (product.Product == "Tablet")
+                    {
+                        <img src="img/tablet.jpg" class="card-img-top fixed-size-image" alt="Tablet Image">
+                    }
+                    else if (product.Product == "Headphones")
+                    {
+                        <img src="img/auriculares_dj.jpg" class="card-img-top fixed-size-image" alt="Headphones Image">
+                    }
+                    else if (product.Product == "Camera")
+                    {
+                        <img src="img/camera.jpg" class="card-img-top fixed-size-image" alt="Camera Image">
+                    }
+                    else if (product.Product == "Smartwatch")
+                    {
+                        <img src="img/smartwatch.jpg" class="card-img-top fixed-size-image" alt="Smartwatch Image">
+                    }
+                    else if (product.Product == "Microwave")
+                    {
+                        <img src="img/microwaves.jpg" class="card-img-top fixed-size-image" alt="Microwave Image">
+                    }
+                    else if (product.Product == "Refrigerator")
+                    {
+                        <img src="img/refrigerator.jpg" class="card-img-top fixed-size-image" alt="Refrigerator Image">
+                    }
+                    else if (product.Product == "Printer")
+                    {
+                        <img src="img/printer.jpg" class="card-img-top fixed-size-image" alt="Printer Image">
+                    }
+                    else if (product.Product == "Vacuum Cleaner")
+                    {
+                        <img src="img/vacuumCleaner.png" class="card-img-top fixed-size-image" alt="Vacuum Cleaner Image">
+                    }
+                    else if (product.Product == "Television")
+                    {
+                        <img src="img/Television.png" class="card-img-top fixed-size-image" alt="Television Image">
+                    }
+                    else if (product.Product == "Air Conditioner")
+                    {
+                        <img src="img/thomson.jpg" class="card-img-top fixed-size-image" alt="Air Conditioner Image">
+                    }
+                    else if (product.Product == "Router")
+                    {
+                        <img src="img/router.jpg" class="card-img-top fixed-size-image" alt="Router Image">
+                    }
+                    else if (product.Product == "Blender")
+                    {
+                        <img src="img/blender.jpg" class="card-img-top fixed-size-image" alt="Blender Image">
+                    }
+
+                    <div class="card-body">
+                        <h5 class="card-title">@product.Product</h5>
+                        <p class="card-text">Id: @product.Id</p>
+                        <p class="card-text">@product.Comment</p>
+                        @if (!string.IsNullOrEmpty(product.Prediction))
+                        {
+                            <p class="card-text"><strong>Predicción:</strong> @product.Prediction</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .fixed-size-image {
+        width: 100%;
+        height: 150px;
+        object-fit: contain;
+        border-bottom: 1px solid #ddd; /* Añadir un borde inferior para separar la imagen del contenido */
+    }
+
+    .card {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden; /* Asegura que las imágenes no se salgan del cuadro */
+    }
+
+    .card-body {
+        padding: 10px; /* Ajustar el padding para hacerlo más compacto */
+    }
+
+
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: bold;
+    }
+
+    .card-text {
+        font-size: 1rem;
+        color: #555;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        border: none;
+        font-size: 1rem;
+        padding: 10px 20px;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+    }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .card + .card {
+        margin-top: 20px;
+    }
+
+</style>
+
+
+@code {
+    private List<ProductComment> Products = new List<ProductComment>();
+    private string accessToken;
+    private string userRole;
+    private bool IsAdmin => userRole == "Admin";
+
+    protected override async Task OnInitializedAsync()
+    {
+        accessToken = await SecureStorageService.GetItemAsync("accessToken");
+        userRole = await SecureStorageService.GetItemAsync("userRole");
+
+        if (string.IsNullOrEmpty(accessToken))
+        {
+            Navigation.NavigateTo("/login");
+        }
+        else
+        {
+            await LoadProducts();
+        }
+    }
+
+    private async Task LoadProducts()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var response = await client.GetAsync("https://portfolioalfredog.somee.com/api/ProductComments");
+            if (response.IsSuccessStatusCode)
+            {
+                Products = await response.Content.ReadFromJsonAsync<List<ProductComment>>();
+            }
+            else
+            {
+                // Manejar el escenario de error
+                Products = new List<ProductComment>();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Manejar la excepción
+            Console.WriteLine($"Error al cargar productos: {ex.Message}");
+            Products = new List<ProductComment>();
+        }
+    }
+
+    private void NavigateToAdminPage()
+    {
+        Navigation.NavigateTo("/admin-page");
+    }
+}

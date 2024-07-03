@@ -1,0 +1,125 @@
+﻿@page "/login"
+@using ProductReviewWeb.Services
+@using System.IdentityModel.Tokens.Jwt
+@using System.Linq
+
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@inject ISecureStorage SecureStorage
+
+<PageTitle>Login</PageTitle>
+
+<h3>Login</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label for="email">Email:</label>
+        <InputText id="email" @bind-Value="loginModel.Email" />
+    </div>
+    <div>
+        <label for="password">Password:</label>
+        <InputText id="password" @bind-Value="loginModel.Password" type="password" />
+    </div>
+    <button type="submit">Login</button>
+</EditForm>
+
+<p>
+    If you don't have an account, <a href="/register">create one here</a>.
+</p>
+
+<p>User account:</p>
+<p>email: alfredoportfolio22@gmail.com</p>
+<p>password: DodoRex321</p>
+<p>-</p>
+<p>Admin account: </p>
+<p>email: contacto@dovahlabs.com</p>
+<p>password: SecretPassword33</p>
+@code {
+    private LoginModel loginModel = new LoginModel();
+    private string errorMessage;
+
+    private async Task HandleLogin()
+    {
+        if (!IsValidEmail(loginModel.Email))
+        {
+            errorMessage = "Invalid email format.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(loginModel.Password))
+        {
+            errorMessage = "Password cannot be empty.";
+            return;
+        }
+
+        var response = await Http.PostAsJsonAsync("https://portfolioalfredog.somee.com/api/users/login", loginModel);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var loginResult = await response.Content.ReadFromJsonAsync<LoginResult>();
+
+            if (loginResult != null)
+            {
+                // Save tokens securely using the injected service
+                await SecureStorage.SetItemAsync("accessToken", loginResult.AccessToken);
+                await SecureStorage.SetItemAsync("refreshToken", loginResult.RefreshToken);
+
+                // Decode the access token to extract user information
+                var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(loginResult.AccessToken);
+
+                var userId = jwtToken.Claims.First(claim => claim.Type == "nameid").Value;
+                var userRole = jwtToken.Claims.First(claim => claim.Type == "role").Value;
+
+                await SecureStorage.SetItemAsync("userId", userId);
+                await SecureStorage.SetItemAsync("userRole", userRole);
+
+                var expireAccess = DateTime.UtcNow.AddHours(23);
+                var expireRefresh = DateTime.UtcNow.AddMonths(1).AddDays(-1);
+
+                await SecureStorage.SetItemAsync("expireAccess", expireAccess.ToString());
+                await SecureStorage.SetItemAsync("expireRefresh", expireRefresh.ToString());
+
+                // Redirect to the home page or dashboard
+                Navigation.NavigateTo("/");
+            }
+        }
+        else
+        {
+            errorMessage = "Login failed. Please check your credentials and try again.";
+        }
+    }
+
+    private bool IsValidEmail(string email)
+    {
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private class LoginModel
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+
+    private class LoginResult
+    {
+        public string AccessToken { get; set; }
+        public string RefreshToken { get; set; }
+    }
+}
